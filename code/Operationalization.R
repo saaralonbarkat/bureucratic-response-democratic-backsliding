@@ -28,7 +28,7 @@ library(lavaan)
 library(labelled)
 
 #read data with qualtRics 
-setwd("C:\\Users\\Nir\\Dropbox\\Civil Servants' Perceptions of Democratic Decline\\data\\raw data")
+setwd("C:\\Users\\nirko\\Dropbox\\Civil Servants' Perceptions of Democratic Decline\\data\\raw data")
 data <- read_spss("survey_14.3.2023.sav")
 
 #create a new dataset with combined variables for men and women
@@ -307,7 +307,7 @@ new_data$tenure <- as.factor(new_data$tenure)
 levels(new_data$tenure) <- c("1-", "1-5", "6-10", "11-20", "20+")
 
 #ministry
-ministry_text_to_fill <- read.xlsx("C:\\Users\\Nir\\Dropbox\\Civil Servants' Perceptions of Democratic Decline\\data\\coding of units\\units_manually_coded.xlsx")
+ministry_text_to_fill <- read.xlsx("C:\\Users\\nirko\\Dropbox\\Civil Servants' Perceptions of Democratic Decline\\data\\coding of units\\units_manually_coded.xlsx")
 new_data$ministry <- coalesce(new_data$Q31, new_data$Q32)
 
 for (response_id_new_data in 1:length(new_data$ResponseId)){
@@ -319,7 +319,7 @@ for (response_id_new_data in 1:length(new_data$ResponseId)){
 }
 
 #education field
-education_field_to_fill <- read.xlsx("C:\\Users\\Nir\\Dropbox\\Civil Servants' Perceptions of Democratic Decline\\data\\coding of academic degree\\coding_Orpaz.xlsx")
+education_field_to_fill <- read.xlsx("C:\\Users\\nirko\\Dropbox\\Civil Servants' Perceptions of Democratic Decline\\data\\coding of academic degree\\coding_Orpaz.xlsx")
 new_data$education_field <- new_data$Q43
 
 for (response_id_new_data in 1:length(new_data$ResponseId)){
@@ -344,6 +344,42 @@ for (response_id_new_data in 1:length(new_data$ResponseId)){
 #ministry affliation
 new_data$ministry <- as.factor(new_data$ministry)
 levels(new_data$ministry) <- levels(new_data$ministry) <- c("Energy", "Defense", "National Security", "Treasury", "Construction and Housing", "Health", "Environmental Protection", "Foreign Affairs", "Education", "Agriculture", "Economy", "Science and Technology", "Law", "Welfare and Social Security", "Aliyah and Integration", "Interior", "Prime Minister", "Population and Immigration Authority", "Social Equality", "Religious Services", "Transportation", "Tourism ", "Communications", "Culture and Sports", "Other", "Ministry of Labor", "Local Authorities", "Independent Authorities")
+
+# Ministry by Paritsan Identity (of responsible minister)
+# Define the mapping for ministries to parties
+ministry_to_party <- c(
+  "Energy" = "Likud",
+  "Defense" = "Likud",
+  "National Security" = "Otzma Yehudit",
+  "Treasury" = "Religious Zionist Party",
+  "Construction and Housing" = "United Torah Judaism",
+  "Health" = "Shas",
+  "Environmental Protection" = "Likud",
+  "Foreign Affairs" = "Likud",
+  "Education" = "Likud",
+  "Agriculture" = "Likud",
+  "Economy" = "Likud",
+  "Science and Technology" = "Likud",
+  "Law" = "Likud",
+  "Welfare and Social Security" = "Shas",
+  "Aliyah and Integration" = "Likud",
+  "Interior" = "Shas",
+  "Prime Minister" = "Likud",
+  "Population and Immigration Authority" = "Other",
+  "Social Equality" = "Likud",
+  "Religious Services" = "Shas",
+  "Transportation" = "Likud",
+  "Tourism " = "Likud",
+  "Communications" = "Likud",
+  "Culture and Sports" = "Likud",
+  "Other" = "Other",
+  "Ministry of Labor" = "Shas",
+  "Local Authorities" = "Other",
+  "Independent Authorities" = "Other"
+)
+
+# Add the new ministry_by_party variable based on the mapping
+new_data$ministry_by_party <- ministry_to_party[as.character(new_data$ministry)]
 
 #age
 new_data$age <- new_data$Q40
@@ -380,8 +416,9 @@ new_data$emails_future_research <- new_data$Q45
 
 ### Subset and Save ###
 #subset relevant data for analysis
-data_for_analysis <- subset(new_data, select = c("ResponseId", "PAST_INFLUENCE", "PROJECT_INFLUENCE", "PAST_POLITICIZATION", "PROJECT_POLITICIZATION",  "PAST_EFFORT", "PROJECT_EFFORT",   "PAST_VOICE", "PROJECT_VOICE",  "BACKSLIDING_1",  "BACKSLIDING_2", "PSM",  "INTENT_EXIT_1", "INTENT_EXIT_2", "RESPONSE_EXIT", "RESPONSE_SABOTAGE", "RESPONSE_VOICE", "ranking", "position_type", "tenure", "ministry","age", "gender", "religiosity", "nationality", "education"))
+data_for_analysis <- subset(new_data, select = c("ResponseId", "PAST_INFLUENCE", "PROJECT_INFLUENCE", "PAST_POLITICIZATION", "PROJECT_POLITICIZATION",  "PAST_EFFORT", "PROJECT_EFFORT",   "PAST_VOICE", "PROJECT_VOICE",  "BACKSLIDING_1",  "BACKSLIDING_2", "PSM",  "INTENT_EXIT_1", "INTENT_EXIT_2", "RESPONSE_EXIT", "RESPONSE_SABOTAGE", "RESPONSE_VOICE", "ranking", "position_type", "tenure", "ministry", "ministry_by_party", "age", "gender", "religiosity", "nationality", "education"))
+#write.csv(data_for_analysis, "data_for_analysis.csv", row.names = FALSE)
 
 #subset relevant variables for analysis including indices' composed questions
-data_for_analysis_extended <- subset(new_data, select = c("ResponseId", "PAST_INFLUENCE", "Q4_1", "Q4_2", "Q4_3", "PAST_POLITICIZATION", "Q10_1", "Q10_2", "Q10_3", "PAST_EFFORT", "PAST_VOICE", "Q22_1", "Q22_2", "Q22_3", "PROJECT_VOICE", "PROJECT_POLITICIZATION", "BACKSLIDING_1", "Q16_1", "Q16_2", "Q16_3", "Q16_4", "Q16_5", "BACKSLIDING_2", "Q15", "Q15_rescale", "PSM", "Q28_1", "Q28_2", "Q28_3", "Q28_4", "PROJECT_EFFORT", "PROJECT_INFLUENCE", "INTENT_EXIT_1", "INTENT_EXIT_2", "RESPONSE_EXIT","Q29_8", "Q29_9", "RESPONSE_SABOTAGE", "Q29_1", "Q29_2", "Q29_3", "Q29_4", "RESPONSE_VOICE", "Q29_5", "Q29_6", "Q29_7", "ranking", "position_type", "tenure", "ministry","age", "gender", "religiosity", "nationality", "education", "education_field", "jurist", "cmv", "emails_future_research"))
+data_for_analysis_extended <- subset(new_data, select = c("ResponseId", "PAST_INFLUENCE", "Q4_1", "Q4_2", "Q4_3", "PAST_POLITICIZATION", "Q10_1", "Q10_2", "Q10_3", "PAST_EFFORT", "PAST_VOICE", "Q22_1", "Q22_2", "Q22_3", "PROJECT_VOICE", "PROJECT_POLITICIZATION", "BACKSLIDING_1", "Q16_1", "Q16_2", "Q16_3", "Q16_4", "Q16_5", "BACKSLIDING_2", "Q15", "Q15_rescale", "PSM", "Q28_1", "Q28_2", "Q28_3", "Q28_4", "PROJECT_EFFORT", "PROJECT_INFLUENCE", "INTENT_EXIT_1", "INTENT_EXIT_2", "RESPONSE_EXIT","Q29_8", "Q29_9", "RESPONSE_SABOTAGE", "Q29_1", "Q29_2", "Q29_3", "Q29_4", "RESPONSE_VOICE", "Q29_5", "Q29_6", "Q29_7", "ranking", "position_type", "tenure", "ministry", "ministry_by_party", "age", "gender", "religiosity", "nationality", "education", "education_field", "jurist", "cmv", "emails_future_research"))
 #write.csv(data_for_analysis_extended, "data_for_analysis_extended_with_emails.csv", row.names = FALSE)
