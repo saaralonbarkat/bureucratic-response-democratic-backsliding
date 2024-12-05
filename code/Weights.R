@@ -1,0 +1,80 @@
+#import data
+source("C:\\Users\\nirko\\Dropbox\\Civil Servants' Perceptions of Democratic Decline\\Code\\Operationalization & CFA\\Operationalization.R")
+
+## Filter sample data
+filtered_sample_data <- data_for_analysis_extended[data_for_analysis_extended$ranking %in% c("middle", "senior", "very senior"), ]
+
+
+##1. Calculate Population Proportions
+pop_statistics <- readRDS("C:\\Users\\nirko\\Dropbox\\Civil Servants' Perceptions of Democratic Decline\\Code\\Operationalization & CFA\\pop_statistics.rds")
+pop_gender <- pop_statistics$gender_proportions
+pop_age <- pop_statistics$age_proportions
+pop_ranking <- pop_statistics$ranking_proportions
+pop_tenure <- pop_statistics$tenure_proportions
+pop_education <- pop_statistics$education_proportions
+pop_education <- pop_education[c("high school", "bachelor", "master", "phd")] # Reorder and rename
+names(pop_education) <- c("high-school", "bachelor", "master", "phd")
+
+
+
+# 2. Calculate sample proportions
+sample_gender <- prop.table(table(filtered_sample_data$gender))
+sample_age <- prop.table(table(filtered_sample_data$age))
+sample_tenure <- prop.table(table(filtered_sample_data$tenure))
+#ranking - process categores first
+filtered_sample_data$ranking_standardized <- ifelse(
+  filtered_sample_data$ranking == "middle", "middle", "senior_or_very_senior"
+)
+sample_ranking <- prop.table(table(filtered_sample_data$ranking_standardized))
+#education - process the categories before
+filtered_sample_data$education_standardized <- ifelse(
+  filtered_sample_data$education %in% c("high-school", "other"), "high-school",
+  as.character(filtered_sample_data$education) # Retain other categories as they are
+)
+
+filtered_sample_data$education_standardized <- factor(
+  filtered_sample_data$education_standardized,
+  levels = c("high-school", "bachelor", "master", "phd") # Ensure all levels are included
+)
+
+sample_education <- prop.table(table(filtered_sample_data$education_standardized))
+
+# 3. Create weights
+# Gender Weight
+weight_gender <- pop_gender / sample_gender
+
+# Age Weight
+weight_age <- pop_age / sample_age
+
+# Ranking Weight
+weight_ranking <- pop_ranking / sample_ranking
+
+# Tenure Weight
+weight_tenure <- pop_tenure / sample_tenure
+
+# Education Weight
+weight_education <- pop_education / sample_education
+
+# 4. Weights to Observations
+# Gender Weight
+filtered_sample_data$weight_gender <- weight_gender[match(filtered_sample_data$gender, names(weight_gender))]
+
+# Age Weight
+filtered_sample_data$weight_age <- weight_age[match(filtered_sample_data$age, names(weight_age))]
+
+# Ranking Weight
+filtered_sample_data$weight_ranking <- weight_ranking[match(filtered_sample_data$ranking_standardized, names(weight_ranking))]
+
+# Tenure Weight
+filtered_sample_data$weight_tenure <- weight_tenure[match(filtered_sample_data$tenure, names(weight_tenure))]
+
+# Education Weight
+filtered_sample_data$weight_education <- weight_education[match(filtered_sample_data$education_standardized, names(weight_education))]
+
+# 5. Combine Weights
+# Combine weights for each observation
+filtered_sample_data$combined_weight <- with(filtered_sample_data,
+                                             weight_gender * weight_age * weight_ranking * weight_tenure * weight_education)
+
+data_for_analysis_with_weights <- filtered_sample_data
+
