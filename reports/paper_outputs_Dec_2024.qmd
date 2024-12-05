@@ -49,7 +49,8 @@ set.seed(2023)
 ```
 
 ```{r}
-#source("Operationalization_31.7.R")
+#source("C:\\Users\\nirko\\Dropbox\\Civil Servants' Perceptions of Democratic Decline\\Code\\Operationalization & CFA\\Operationalization.R")
+#source("C:\\Users\\nirko\\Dropbox\\Civil Servants' Perceptions of Democratic Decline\\Code\\Operationalization & CFA\\Weights.R")
 
 
 ```
@@ -72,10 +73,6 @@ new_data %>%
 
 
 ```
-
-
-
-
 
 ## Table 1 - Characteristics of survey sample and research population
 ```{r}
@@ -107,6 +104,13 @@ PROJECT_INFLUENCE = "Q_5"
 
 1-factor model
 ```{r}
+#filter data
+data_for_analysis_senior <- new_data %>% 
+  filter((ranking !="junior") %>% replace_na(TRUE)) %>% 
+  filter(INTENT_EXIT_2>0|
+           PROJECT_EFFORT>0|
+           PROJECT_VOICE>0)
+
 cfa.model.1factor <-
   'one_factor =~ Q4_1+ Q4_2+ Q4_3 + Q10_1+ Q10_2+ Q10_3 + PAST_EFFORT + Q22_1+ Q22_2+ Q22_3 + Q15+ Q16_1+ Q16_2+ Q16_3+ Q16_4+ Q16_5 + PROJECT_POLITICIZATION + PROJECT_INFLUENCE'
 
@@ -141,7 +145,6 @@ summary(fit.cfa.model.7factor, fit.measures = TRUE, standardize = TRUE)
 ```{r}
 anova(fit.cfa.model.7factor,fit.cfa.model.1factor)
 ```
-
 
 
 ## Table 2: descriptive statistics
@@ -296,6 +299,97 @@ Model for exit, voice and work
 exit_mod1 <- lm(INTENT_EXIT_2 ~ 
             BACKSLIDING_2 +   PAST_POLITICIZATION + PAST_INFLUENCE,
             data=data_for_analysis_senior)
+exit_mod2 <- exit_mod1 %>%  update(.~. + PROJECT_POLITICIZATION)
+exit_mod3 <- exit_mod1 %>%  update(.~. + PROJECT_INFLUENCE)
+exit_mod4 <- exit_mod1 %>%  update(.~. + PROJECT_POLITICIZATION + PROJECT_INFLUENCE)
+
+sjPlot::tab_model(exit_mod1,exit_mod2,exit_mod3,exit_mod4,
+                  show.ci = F,
+                  show.se = T,
+                  show.std = T,
+                  collapse.se = T,
+                  emph.p=F,
+                  string.est = "B",
+                  string.std = "Beta",
+                  string.pred = " ",
+                  string.intercept = "Intercept",
+                  pred.labels = predictor_labels,#,
+                  dv.labels = rep(c("Exit intention"),each=4),
+                  #dv.labels = rep(c("Exit intention","Voice intention", "Work effort intention"),each=2),
+                  order.terms = c(2,5:6,3:4,1))
+
+
+
+```
+
+```{r}
+voice_mod1 <- exit_mod1 %>% update(PROJECT_VOICE~.+ PAST_VOICE)
+voice_mod2 <- voice_mod1 %>%  update(.~. + PROJECT_POLITICIZATION)
+voice_mod3 <- voice_mod1 %>%  update(.~. + PROJECT_INFLUENCE)
+voice_mod4 <- voice_mod1 %>%  update(.~. + PROJECT_POLITICIZATION + PROJECT_INFLUENCE)
+
+
+sjPlot::tab_model(voice_mod1,voice_mod2,voice_mod3,voice_mod4,
+                  show.ci = F,
+                  show.se = T,
+                  show.std = T,
+                  collapse.se = T,
+                  emph.p=F,
+                  string.est = "B",
+                  string.std = "Beta",
+                  string.pred = " ",
+                  string.intercept = "Intercept",
+                  pred.labels = predictor_labels,
+                  dv.labels = rep(c("Voice intention"),each=4),
+                  #dv.labels = rep(c("Exit intention","Voice intention", "Work effort intention"),each=2),
+                  order.terms = c(2,6:7,3:5,1))
+
+```
+
+
+
+```{r}
+work_mod1 <- exit_mod1 %>% update(PROJECT_EFFORT~.+ PAST_EFFORT)
+work_mod2 <- work_mod1 %>%  update(.~. + PROJECT_POLITICIZATION)
+work_mod3 <- work_mod1 %>%  update(.~. + PROJECT_INFLUENCE)
+work_mod4 <- work_mod1 %>%  update(.~. + PROJECT_POLITICIZATION + PROJECT_INFLUENCE)
+
+
+sjPlot::tab_model(work_mod1,work_mod2,work_mod3,work_mod4,
+                  show.ci = F,
+                  show.se = T,
+                  show.std = T,
+                  collapse.se = T,
+                  emph.p=F,
+                  string.est = "B",
+                  string.std = "Beta",
+                  string.pred = " ",
+                  string.intercept = "Intercept",
+                  pred.labels = predictor_labels,
+                  dv.labels = rep(c("Work effort intention"),each=4),
+                  #dv.labels = rep(c("Exit intention","Voice intention", "Work effort intention"),each=2),
+                  order.terms = c(2,6:7,3:5,1))
+
+```
+
+
+Model for exit, voice and work - weighted
+```{r}
+
+# Merge the dataset with weights with the data_for_analysis_senior based on ResponseId and add the combined_weight column
+data_for_analysis_senior <- merge(data_for_analysis_senior, 
+                                   data_for_analysis_with_weights[, c("ResponseId", "combined_weight")], 
+                                   by = "ResponseId", 
+                                   all.x = TRUE)
+
+# standardize weight
+data_for_analysis_senior$standardized_weight <- as.numeric(data_for_analysis_senior$combined_weight / mean(data_for_analysis_senior$combined_weight, na.rm = TRUE))
+
+
+exit_mod1 <- lm(INTENT_EXIT_2 ~ 
+            BACKSLIDING_2 +   PAST_POLITICIZATION + PAST_INFLUENCE,
+            data=data_for_analysis_senior,
+            weights = standardized_weight)
 exit_mod2 <- exit_mod1 %>%  update(.~. + PROJECT_POLITICIZATION)
 exit_mod3 <- exit_mod1 %>%  update(.~. + PROJECT_INFLUENCE)
 exit_mod4 <- exit_mod1 %>%  update(.~. + PROJECT_POLITICIZATION + PROJECT_INFLUENCE)
