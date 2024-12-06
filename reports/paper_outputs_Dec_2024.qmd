@@ -232,8 +232,9 @@ politicization_mod1 <- lm(PROJECT_POLITICIZATION ~
 influence_mod1 <- politicization_mod1 %>%  update(PROJECT_INFLUENCE~.)
 
 sjPlot::tab_model(politicization_mod1,influence_mod1,
+                  show.est = F,
                   show.ci = F,
-                  show.se = T,
+                  show.se = F,
                   show.std = T,
                   collapse.se = T,
                   emph.p=F,
@@ -265,6 +266,7 @@ work_mod2 <- work_mod1 %>%  update(.~. + PROJECT_POLITICIZATION + PROJECT_INFLUE
 sjPlot::tab_model(exit_mod1,exit_mod2,
                   voice_mod1,voice_mod2,
                   work_mod1,work_mod2,
+                  show.est = F,
                   show.ci = F,
                   show.se = T,
                   show.std = T,
@@ -375,25 +377,30 @@ sjPlot::tab_model(work_mod1,work_mod2,work_mod3,work_mod4,
 
 ```{r}
 SEM_All <-'
-
+##latent variables##
+Past_influence=~ Q4_1 + Q4_2 + Q4_3
+Past_politicization=~ Q10_1 + Q10_2 + Q10_3
+Demo_backsliding=~ Q16_1 + Q16_2 + Q16_3 + Q16_4 + Q16_5 + Q15
+Past_voice=~Q22_1+Q22_2+Q22_3
+Past_effort=~PAST_EFFORT
 
 ##Direct effects##
-INTENT_EXIT_2 ~ cp_ex*BACKSLIDING_2
-PROJECT_VOICE ~ cp_vc*BACKSLIDING_2 + PAST_VOICE
-PROJECT_EFFORT ~ cp_eff*BACKSLIDING_2 + PAST_EFFORT
+INTENT_EXIT_2 ~ cp_ex*Demo_backsliding
+PROJECT_VOICE ~ cp_vc*Demo_backsliding + Past_voice
+PROJECT_EFFORT ~ cp_eff*Demo_backsliding + Past_effort
 
 ##Mediators##
-PROJECT_POLITICIZATION ~ a1*BACKSLIDING_2 + PAST_POLITICIZATION 
-PROJECT_INFLUENCE ~ a2*BACKSLIDING_2 + PAST_INFLUENCE
+PROJECT_POLITICIZATION ~ a1*Demo_backsliding + Past_politicization 
+PROJECT_INFLUENCE ~ a2*Demo_backsliding + Past_influence
 
-INTENT_EXIT_2 ~ b1_ex*PROJECT_POLITICIZATION + PAST_POLITICIZATION
-INTENT_EXIT_2 ~ b2_ex*PROJECT_INFLUENCE + PAST_INFLUENCE
+INTENT_EXIT_2 ~ b1_ex*PROJECT_POLITICIZATION + Past_politicization
+INTENT_EXIT_2 ~ b2_ex*PROJECT_INFLUENCE + Past_influence
 
-PROJECT_VOICE ~ b1_vc*PROJECT_POLITICIZATION + PAST_POLITICIZATION
-PROJECT_VOICE ~ b2_vc*PROJECT_INFLUENCE + PAST_INFLUENCE
+PROJECT_VOICE ~ b1_vc*PROJECT_POLITICIZATION + Past_politicization
+PROJECT_VOICE ~ b2_vc*PROJECT_INFLUENCE + Past_influence
 
-PROJECT_EFFORT ~ b1_eff*PROJECT_POLITICIZATION + PAST_POLITICIZATION
-PROJECT_EFFORT ~ b2_eff*PROJECT_INFLUENCE + PAST_INFLUENCE
+PROJECT_EFFORT ~ b1_eff*PROJECT_POLITICIZATION + Past_politicization
+PROJECT_EFFORT ~ b2_eff*PROJECT_INFLUENCE + Past_influence
 
 ## Indirect effects ##
 tot_ind_exit := abs(a1*b1_ex) + abs(a2*b2_ex)
@@ -435,11 +442,11 @@ tot_back_effort := cp_eff + (a1*b1_eff) + (a2*b2_eff)
 PROJECT_POLITICIZATION~~PROJECT_INFLUENCE
 
 ##Other correlations##
-PROJECT_POLITICIZATION~~PAST_INFLUENCE
-PROJECT_INFLUENCE~~PAST_POLITICIZATION
-PAST_POLITICIZATION~~PAST_INFLUENCE
-PAST_EFFORT~~PROJECT_POLITICIZATION
-PAST_EFFORT~~PROJECT_INFLUENCE
+PROJECT_POLITICIZATION~~Past_influence
+PROJECT_INFLUENCE~~Past_politicization
+Past_politicization~~Past_influence
+Past_effort~~PROJECT_POLITICIZATION
+Past_effort~~PROJECT_INFLUENCE
 
 
 ##Contrasts
@@ -461,8 +468,40 @@ summary(fit_all, fit.measures=TRUE, standardized=TRUE)
 ```
 
 ```{r}
+standardizedSolution_boot_ci(fit_all) %>% 
+  #filter(op==":=") %>% 
+  dplyr::select(label,est.std,boot.ci.lower,boot.ci.upper,pvalue) %>% 
+  mutate(across(2:4, round, 2)) %>% 
+  mutate(across(5, round, 3)) %>% 
+  gt::gt()
+```
+
+
+```{r}
 parameterEstimates(fit_all, boot.ci.type	="basic", standardized = T, output = "text")
 ```
+
+```{r}
+fitmeasures(fit_all, c('chisq','df','pvalue','cfi','tli', 'rmsea', 'rmsea.ci.upper','rmsea.ci.lower', 'srmr')) %>% 
+  broom::tidy() %>% 
+  pivot_wider(names_from = names,values_from = x) %>% 
+  mutate(chisq_01 = str_c(chisq %>% round(3)," [","df=",df,", p=",pvalue %>% round(3),"]"),
+         rmsea_01 = str_c(rmsea %>% round(3)," CI[", rmsea.ci.lower %>% round(3),",",rmsea.ci.upper %>% round(3),"]"),
+         cfi = cfi %>% round(3),
+         tli = tli %>% round(3),
+         srmr = srmr %>% round(3),
+         n = fit_all@SampleStats@nobs) %>%
+  dplyr::select('N' = n,
+          'Chi-sq' = chisq_01,
+         'CFI' = cfi,
+         'TLI' = tli,
+         'RMSEA' = rmsea_01,
+         'SRMR' = srmr) %>% 
+  t() %>% 
+  kableExtra::kable()
+```
+
+
 
 # Online appendix
 
@@ -931,6 +970,11 @@ sjPlot::tab_model(exit_mod1,exit_mod1_relig,
 
 
 
+```{r, fig.width=8,fig.height=6}
+p1<- cars %>% ggplot(aes(x=speed))+ geom_histogram()
 
+p1
 
+#ggsave("p1.jpg",width = 8, height = 4,dpi=600)
+```
 
