@@ -801,9 +801,9 @@ exit_mod1 <- lm(INTENT_EXIT_1 ~
 
 exit_mod2 <- exit_mod1 %>% update(.~.+ PROJECT_POLITICIZATION + PROJECT_INFLUENCE) 
 
-exit_mod3 <- exit_mod1 %>% update(.~.+ education+ gender +tenure+ position_type+ ranking+ age+ jurist)
+exit_mod3 <- exit_mod1 %>% update(.~.+ education+ gender +tenure+ position_type+ ranking+ age+ jurist+ ministry_by_party)
 
-exit_mod4 <- exit_mod2 %>% update(.~.+ education+ gender +tenure+ position_type+ ranking+ age+ jurist)
+exit_mod4 <- exit_mod2 %>% update(.~.+ education+ gender +tenure+ position_type+ ranking+ age+ jurist+ ministry_by_party)
 
 
 
@@ -829,9 +829,9 @@ exit_mod1 <- lm(INTENT_EXIT_2 ~
 
 exit_mod2 <- exit_mod1 %>% update(.~.+ PROJECT_POLITICIZATION + PROJECT_INFLUENCE) 
 
-exit_mod3 <- exit_mod1 %>% update(.~.+ education+ gender +tenure+ position_type+ ranking+ age+ jurist)
+exit_mod3 <- exit_mod1 %>% update(.~.+ education+ gender +tenure+ position_type+ ranking+ age+ jurist+ ministry_by_party)
 
-exit_mod4 <- exit_mod2 %>% update(.~.+ education+ gender +tenure+ position_type+ ranking+ age+ jurist)
+exit_mod4 <- exit_mod2 %>% update(.~.+ education+ gender +tenure+ position_type+ ranking+ age+ jurist+ ministry_by_party)
 
 
 
@@ -868,7 +868,7 @@ predictor_labels <- c(
 
 ```{r}
 politicization_mod1 <- lm(PROJECT_POLITICIZATION ~ 
-            BACKSLIDING_2 +   PAST_POLITICIZATION + PAST_INFLUENCE+ education+ gender +tenure+ position_type+ ranking+ age+ jurist,
+            BACKSLIDING_2 +   PAST_POLITICIZATION + PAST_INFLUENCE+ education+ gender +tenure+ position_type+ ranking+ age+ jurist+ ministry_by_party,
             data=data_for_analysis_senior)
 politicization_mod1_relig <- politicization_mod1 %>% update(.~.+religiosity)
 
@@ -897,16 +897,16 @@ Model for exit, voice and work
 ```{r}
 exit_mod1 <- lm(INTENT_EXIT_2 ~ 
             BACKSLIDING_2 +   
-              PAST_POLITICIZATION + PAST_INFLUENCE+ education+ gender +tenure+ position_type+ ranking+ age+ jurist,
+              PAST_POLITICIZATION + PAST_INFLUENCE+ education+ gender +tenure+ position_type+ ranking+ age+ jurist+ ministry_by_party,
             data=data_for_analysis_senior)
 exit_mod1_relig <- exit_mod1 %>% update(.~.+religiosity)
 
 
-voice_mod1 <- exit_mod1 %>% update(PROJECT_VOICE~.+ PAST_VOICE+ education+ gender +tenure+ position_type+ ranking+ age+ jurist)
+voice_mod1 <- exit_mod1 %>% update(PROJECT_VOICE~.+ PAST_VOICE+ education+ gender +tenure+ position_type+ ranking+ age+ jurist + ministry_by_party)
 voice_mod1_relig <- voice_mod1 %>% update(.~.+religiosity)
 
 
-work_mod1 <- exit_mod1 %>% update(PROJECT_EFFORT~.+ PAST_EFFORT+ education+ gender +tenure+ position_type+ ranking+ age+ jurist)
+work_mod1 <- exit_mod1 %>% update(PROJECT_EFFORT~.+ PAST_EFFORT+ education+ gender +tenure+ position_type+ ranking+ age+ jurist + ministry_by_party)
 work_mod1_relig <- work_mod1 %>% update(.~.+religiosity)
 
 
