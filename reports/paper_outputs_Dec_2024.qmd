@@ -293,84 +293,6 @@ sjPlot::tab_model(exit_mod1,exit_mod2,
 
 
 
-Model for exit, voice and work
-```{r}
-exit_mod1 <- lm(INTENT_EXIT_2 ~ 
-            BACKSLIDING_2 +   PAST_POLITICIZATION + PAST_INFLUENCE,
-            data=data_for_analysis_senior)
-exit_mod2 <- exit_mod1 %>%  update(.~. + PROJECT_POLITICIZATION)
-exit_mod3 <- exit_mod1 %>%  update(.~. + PROJECT_INFLUENCE)
-exit_mod4 <- exit_mod1 %>%  update(.~. + PROJECT_POLITICIZATION + PROJECT_INFLUENCE)
-
-sjPlot::tab_model(exit_mod1,exit_mod2,exit_mod3,exit_mod4,
-                  show.ci = F,
-                  show.se = T,
-                  show.std = T,
-                  collapse.se = T,
-                  emph.p=F,
-                  string.est = "B",
-                  string.std = "Beta",
-                  string.pred = " ",
-                  string.intercept = "Intercept",
-                  pred.labels = predictor_labels,#,
-                  dv.labels = rep(c("Exit intention"),each=4),
-                  #dv.labels = rep(c("Exit intention","Voice intention", "Work effort intention"),each=2),
-                  order.terms = c(2,5:6,3:4,1))
-
-
-
-```
-
-```{r}
-voice_mod1 <- exit_mod1 %>% update(PROJECT_VOICE~.+ PAST_VOICE)
-voice_mod2 <- voice_mod1 %>%  update(.~. + PROJECT_POLITICIZATION)
-voice_mod3 <- voice_mod1 %>%  update(.~. + PROJECT_INFLUENCE)
-voice_mod4 <- voice_mod1 %>%  update(.~. + PROJECT_POLITICIZATION + PROJECT_INFLUENCE)
-
-
-sjPlot::tab_model(voice_mod1,voice_mod2,voice_mod3,voice_mod4,
-                  show.ci = F,
-                  show.se = T,
-                  show.std = T,
-                  collapse.se = T,
-                  emph.p=F,
-                  string.est = "B",
-                  string.std = "Beta",
-                  string.pred = " ",
-                  string.intercept = "Intercept",
-                  pred.labels = predictor_labels,
-                  dv.labels = rep(c("Voice intention"),each=4),
-                  #dv.labels = rep(c("Exit intention","Voice intention", "Work effort intention"),each=2),
-                  order.terms = c(2,6:7,3:5,1))
-
-```
-
-
-
-```{r}
-work_mod1 <- exit_mod1 %>% update(PROJECT_EFFORT~.+ PAST_EFFORT)
-work_mod2 <- work_mod1 %>%  update(.~. + PROJECT_POLITICIZATION)
-work_mod3 <- work_mod1 %>%  update(.~. + PROJECT_INFLUENCE)
-work_mod4 <- work_mod1 %>%  update(.~. + PROJECT_POLITICIZATION + PROJECT_INFLUENCE)
-
-
-sjPlot::tab_model(work_mod1,work_mod2,work_mod3,work_mod4,
-                  show.ci = F,
-                  show.se = T,
-                  show.std = T,
-                  collapse.se = T,
-                  emph.p=F,
-                  string.est = "B",
-                  string.std = "Beta",
-                  string.pred = " ",
-                  string.intercept = "Intercept",
-                  pred.labels = predictor_labels,
-                  dv.labels = rep(c("Work effort intention"),each=4),
-                  #dv.labels = rep(c("Exit intention","Voice intention", "Work effort intention"),each=2),
-                  order.terms = c(2,6:7,3:5,1))
-
-```
-
 ## SEM models 
 
 
@@ -469,7 +391,7 @@ summary(fit_all, fit.measures=TRUE, standardized=TRUE)
 
 ```{r}
 standardizedSolution_boot_ci(fit_all) %>% 
-  #filter(op==":=") %>% 
+  filter(op==":=") %>% 
   dplyr::select(label,est.std,boot.ci.lower,boot.ci.upper,pvalue) %>% 
   mutate(across(2:4, round, 2)) %>% 
   mutate(across(5, round, 3)) %>% 
