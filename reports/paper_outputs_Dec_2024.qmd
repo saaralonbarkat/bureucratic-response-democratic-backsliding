@@ -249,6 +249,14 @@ sjPlot::tab_model(politicization_mod1,influence_mod1,
 ```
 
 
+
+```{r}
+#regression outputs with CIs
+sjPlot::tab_model(politicization_mod1,influence_mod1,
+                  show.std=T
+)
+```
+
 Model for exit, voice and work
 ```{r}
 exit_mod1 <- lm(INTENT_EXIT_2 ~ 
@@ -285,9 +293,12 @@ sjPlot::tab_model(exit_mod1,exit_mod2,
 ```
 
 ```{r}
+#regression outputs with CIs
 sjPlot::tab_model(exit_mod1,exit_mod2,
                   voice_mod1,voice_mod2,
-                  work_mod1,work_mod2)
+                  work_mod1,work_mod2,
+                  show.std=T
+)
 ```
 
 
