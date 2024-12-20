@@ -2,7 +2,7 @@
 source("C:\\Users\\nirko\\Dropbox\\Civil Servants' Perceptions of Democratic Decline\\Code\\Operationalization & CFA\\Operationalization.R")
 
 ## Filter sample data
-filtered_sample_data <- data_for_analysis_extended[data_for_analysis_extended$ranking %in% c("middle", "senior", "very senior"), ]
+filtered_sample_data <- data_for_analysis_senior[data_for_analysis_senior$ranking %in% c("middle", "senior", "very senior"), ]
 
 
 ##1. Calculate Population Proportions
@@ -73,8 +73,83 @@ filtered_sample_data$weight_education <- weight_education[match(filtered_sample_
 
 # 5. Combine Weights
 # Combine weights for each observation
-filtered_sample_data$combined_weight <- with(filtered_sample_data,
+filtered_sample_data$combined_weights <- with(filtered_sample_data,
                                              weight_gender * weight_age * weight_ranking * weight_tenure * weight_education)
 
 data_for_analysis_with_weights <- filtered_sample_data
+
+# 6. Run models with weights 
+# Merge the 'combined_weights' column from 'filtered_sample_data' into 'data_for_analysis_senior'
+data_for_analysis_senior <- merge(
+  data_for_analysis_senior,
+  data_for_analysis_with_weights[, c("ResponseId", "combined_weights")],
+  by = "ResponseId",
+  all.x = TRUE
+)
+
+data_for_analysis_senior <- data_for_analysis_senior[!is.na(data_for_analysis_senior$combined_weight), ]
+data_for_analysis_senior$combined_weights <- as.numeric(as.character(data_for_analysis_senior$combined_weights)) 
+
+
+#exit
+exit_mod1 <- lm(INTENT_EXIT_2 ~ 
+                  BACKSLIDING_2 +   PAST_POLITICIZATION + PAST_INFLUENCE,
+                data=data_for_analysis_senior %>% drop_na(PROJECT_POLITICIZATION,PROJECT_INFLUENCE))
+
+exit_mod2 <- exit_mod1 %>%  update(.~. + PROJECT_POLITICIZATION + PROJECT_INFLUENCE)
+exit_mod3 <- exit_mod2 %>%  update(.~. + combined_weights)
+
+sjPlot::tab_model(exit_mod1,
+                  exit_mod2,
+                  exit_mod3,
+                  show.ci = F,
+                  show.se = T,
+                  show.std = T,
+                  collapse.se = T,
+                  emph.p=F,
+                  string.est = "B",
+                  string.std = "Beta",
+                  string.pred = " ",
+                  string.intercept = "Intercept",
+                  pred.labels = predictor_labels)
+
+#voice
+voice_mod1 <- exit_mod1 %>% update(PROJECT_VOICE~.+ PAST_VOICE)
+voice_mod2 <- voice_mod1 %>%  update(.~. + PROJECT_POLITICIZATION + PROJECT_INFLUENCE)
+voice_mod3 <- voice_mod2 %>%  update(.~. + combined_weights)
+
+sjPlot::tab_model(voice_mod1,
+                  voice_mod2,
+                  voice_mod3,
+                  show.ci = F,
+                  show.se = T,
+                  show.std = T,
+                  collapse.se = T,
+                  emph.p=F,
+                  string.est = "B",
+                  string.std = "Beta",
+                  string.pred = " ",
+                  string.intercept = "Intercept",
+                  pred.labels = predictor_labels)
+
+#work effort
+work_mod1 <- exit_mod1 %>% update(PROJECT_EFFORT~.+ PAST_EFFORT)
+work_mod2 <- work_mod1 %>%  update(.~. + PROJECT_POLITICIZATION + PROJECT_INFLUENCE)
+work_mod3 <- work_mod2 %>%  update(.~. +combined_weights)
+
+
+
+sjPlot::tab_model(work_mod1,
+                  work_mod2,
+                  work_mod3,
+                  show.ci = F,
+                  show.se = T,
+                  show.std = T,
+                  collapse.se = T,
+                  emph.p=F,
+                  string.est = "B",
+                  string.std = "Beta",
+                  string.pred = " ",
+                  string.intercept = "Intercept",
+                  pred.labels = predictor_labels)
 
