@@ -51,8 +51,14 @@ set.seed(2023)
 ```{r}
 #source("Operationalization_31.7.R")
 
-
+data_for_analysis_senior <- data_for_analysis_extended %>% 
+  filter((ranking !="junior") %>% replace_na(TRUE)) %>% 
+  filter(INTENT_EXIT_2>0|
+          PROJECT_EFFORT>0|
+           PROJECT_VOICE>0)
 ```
+
+
 
 
 # Descriptive
@@ -89,6 +95,8 @@ data_for_analysis_senior %>% data_frame()%>%
          religiosity,
          jurist)  %>%
   gtsummary::tbl_summary()
+
+
 ```
 
 ## CFA - Measurement model
@@ -436,192 +444,6 @@ fitmeasures(fit_all, c('chisq','df','pvalue','cfi','tli', 'rmsea', 'rmsea.ci.upp
 
 
 
-# Online appendix
-
-## Causal mediation analysis
-
-Exit
-
-```{r}
-# Load necessary package
-library(mediation)
-set.seed(2023)
-
-t1 <- data_for_analysis_senior %>% 
-  drop_na(BACKSLIDING_2,INTENT_EXIT_2,PROJECT_VOICE,PROJECT_EFFORT,PROJECT_POLITICIZATION,PROJECT_INFLUENCE)
-
-
-# Mediator 1 model
-med1_model <- lm(PROJECT_POLITICIZATION ~ 
-            BACKSLIDING_2 +   PAST_POLITICIZATION + PAST_INFLUENCE,
-            data=t1)
-
-# Mediator 2 model
-med2_model <- lm(PROJECT_INFLUENCE ~ 
-            BACKSLIDING_2 +   PAST_POLITICIZATION + PAST_INFLUENCE,
-            data=t1)
-
-# Outcome model med 1
-outcome_model_1 <-
-  lm(INTENT_EXIT_2 ~ 
-            BACKSLIDING_2 +   PAST_POLITICIZATION + PAST_INFLUENCE +
-            PROJECT_POLITICIZATION,
-            data=t1)
-
-
-# Outcome model med 2
-outcome_model_2 <-
-  lm(INTENT_EXIT_2 ~ 
-            BACKSLIDING_2 +   PAST_POLITICIZATION + PAST_INFLUENCE +
-            PROJECT_INFLUENCE,
-            data=t1)
-
-
-# Mediation analysis for the first mediator with bootstrapping
-mediation_result_exit_politicization <-
-  mediate(
-    med1_model,
-    outcome_model_1,
-    treat = "BACKSLIDING_2",
-    mediator = "PROJECT_POLITICIZATION",
-    boot = TRUE,
-    sims = 1000
-  )
-
-# Mediation analysis for the second mediator with bootstrapping
-mediation_result_exit_influence <-
-  mediate(
-    med2_model,
-    outcome_model_2,
-    treat = "BACKSLIDING_2",
-    mediator = "PROJECT_INFLUENCE",
-    boot = TRUE,
-    sims = 1000
-  )
-
-# Summary of the results
-```
-
-```{r}
-summary(mediation_result_exit_politicization) 
-```
-
-
-```{r}
-summary(mediation_result_exit_influence)
-```
-
-
-Voice
-
-```{r}
-
-# Outcome model med 1
-outcome_model_1 <-
-  lm(PROJECT_VOICE ~ 
-            BACKSLIDING_2 +   PAST_POLITICIZATION + PAST_INFLUENCE +
-            PROJECT_POLITICIZATION,
-            data=t1)
-
-
-# Outcome model med 2
-outcome_model_2 <-
-  lm(PROJECT_VOICE ~ 
-            BACKSLIDING_2 +   PAST_POLITICIZATION + PAST_INFLUENCE +
-            PROJECT_INFLUENCE,
-            data=t1)
-
-
-# Mediation analysis for the first mediator with bootstrapping
-mediation_result_voice_politicization <-
-  mediate(
-    med1_model,
-    outcome_model_1,
-    treat = "BACKSLIDING_2",
-    mediator = "PROJECT_POLITICIZATION",
-    boot = TRUE,
-    sims = 1000
-  )
-
-# Mediation analysis for the second mediator with bootstrapping
-mediation_result_voice_influence <-
-  mediate(
-    med2_model,
-    outcome_model_2,
-    treat = "BACKSLIDING_2",
-    mediator = "PROJECT_INFLUENCE",
-    boot = TRUE,
-    sims = 1000
-  )
-
-# Summary of the results
-```
-
-```{r}
-summary(mediation_result_voice_politicization)
-```
-
-
-```{r}
-summary(mediation_result_voice_influence)
-```
-
-
-
-Effort
-
-```{r}
-
-# Outcome model med 1
-outcome_model_1 <-
-  lm(PROJECT_EFFORT ~ 
-            BACKSLIDING_2 +   PAST_POLITICIZATION + PAST_INFLUENCE + PAST_EFFORT + 
-            PROJECT_POLITICIZATION,
-            data=t1)
-
-
-# Outcome model med 2
-outcome_model_2 <-
-  lm(PROJECT_EFFORT ~ 
-            BACKSLIDING_2 +   PAST_POLITICIZATION + PAST_INFLUENCE + PAST_EFFORT + 
-            PROJECT_INFLUENCE,
-            data=t1)
-
-
-# Mediation analysis for the first mediator with bootstrapping
-mediation_result_work_politicization <-
-  mediate(
-    med1_model,
-    outcome_model_1,
-    treat = "BACKSLIDING_2",
-    mediator = "PROJECT_POLITICIZATION",
-    boot = TRUE,
-    sims = 1000
-  )
-
-# Mediation analysis for the second mediator with bootstrapping
-mediation_result_work_influence <-
-  mediate(
-    med2_model,
-    outcome_model_2,
-    treat = "BACKSLIDING_2",
-    mediator = "PROJECT_INFLUENCE",
-    boot = TRUE,
-    sims = 1000
-  )
-
-# Summary of the results
-```
-
-```{r}
-summary(mediation_result_work_politicization)
-```
-
-
-```{r}
-summary(mediation_result_work_influence)
-```
-
 ## Descripive illustration
 
 ```{r}
@@ -665,11 +487,10 @@ t1 %>%
 ```
 
 
+# Online appendix
 
 
-
-
-## Exit 1
+## Exit 1 (online appendix A12)
 
 ```{r}
 data_for_analysis_senior %>% count(INTENT_EXIT_1)
@@ -777,7 +598,7 @@ exit_mod1 <- lm(INTENT_EXIT_1 ~
 exit_mod2 <- exit_mod1 %>% update(.~.+ PROJECT_POLITICIZATION + PROJECT_INFLUENCE) 
 
 exit_mod3 <- lm(INTENT_EXIT_1 ~ 
-                  BACKSLIDING_2 + PAST_POLITICIZATION + PAST_INFLUENCE + education+ gender +tenure+ position_type+ ranking+ age+ jurist+ ministry_by_party,
+                  BACKSLIDING_2 + PAST_POLITICIZATION + PAST_INFLUENCE + education+ gender +tenure+ position_type+ ranking+ age+ jurist,
                 data=data_for_analysis_senior %>% drop_na(PROJECT_POLITICIZATION,PROJECT_INFLUENCE))
   
 exit_mod4 <- exit_mod3 %>% update(.~.+ PROJECT_POLITICIZATION + PROJECT_INFLUENCE) 
@@ -786,35 +607,25 @@ exit_mod4 <- exit_mod3 %>% update(.~.+ PROJECT_POLITICIZATION + PROJECT_INFLUENC
 #Table A12.3
 sjPlot::tab_model(exit_mod1,exit_mod2,
                   exit_mod3,exit_mod4,
+                  show.est = F,
                   show.ci = F,
-                  show.se = T,
-                  collapse.se = T)
+                  show.se = F,
+                  show.std = T,
+                  collapse.se = T,
+                  emph.p=F,
+                  string.est = "B",
+                  string.std = "Beta",
+                  string.pred = " ",
+                  string.intercept = "Intercept",
+                  pred.labels = predictor_labels,
+                  dv.labels = rep(c("exit intention (first measure)"),each=4))
 
-exit_mod1 <- lm(INTENT_EXIT_2 ~ 
-                  BACKSLIDING_2 + PAST_POLITICIZATION + PAST_INFLUENCE,
-                data=data_for_analysis_senior %>% drop_na(PROJECT_POLITICIZATION,PROJECT_INFLUENCE))
-
-exit_mod2 <- exit_mod1 %>% update(.~.+ PROJECT_POLITICIZATION + PROJECT_INFLUENCE) 
-
-exit_mod3 <- lm(INTENT_EXIT_2 ~ 
-                  BACKSLIDING_2 + PAST_POLITICIZATION + PAST_INFLUENCE + education+ gender +tenure+ position_type+ ranking+ age+ jurist+ ministry_by_party,
-                data=data_for_analysis_senior %>% drop_na(PROJECT_POLITICIZATION,PROJECT_INFLUENCE))
-
-exit_mod4 <- exit_mod3 %>% update(.~.+ PROJECT_POLITICIZATION + PROJECT_INFLUENCE) 
-
-
-#Table A12.4
-sjPlot::tab_model(exit_mod1,exit_mod2,
-                  exit_mod3,exit_mod4,
-                  show.ci = F,
-                  show.se = T,
-                  collapse.se = T)
 
 ```
 
 
 
-Model for expected politicization & influence
+## Models with controls (online appendix A8)
 
 ```{r}
 predictor_labels <- c(
@@ -827,10 +638,11 @@ predictor_labels <- c(
   "PAST_EFFORT" = "Past work effort"
 )
 
-#set Other as a base for ministry_by_party
-data_for_analysis_senior$ministry_by_party <- relevel(data_for_analysis_senior$ministry_by_party, ref = "Other")
-#set Very Senior as a based for ranking
-data_for_analysis_senior$ranking <- relevel(data_for_analysis_senior$ranking, ref = "very senior")
+data_for_analysis_senior <- data_for_analysis_senior %>%
+  mutate(ministry_by_party = ministry_by_party %>% as.factor() %>% # Convert to factor
+  relevel(ref = "Likud"), # Set "Other" as reference level
+ranking = ranking %>% relevel(ref = "middle"), #set Very Senior as a based for ranking
+education = education %>% relevel(ref = "bachelor")) #set bachelor as a based for education
 
 ```
 
@@ -839,31 +651,16 @@ data_for_analysis_senior$ranking <- relevel(data_for_analysis_senior$ranking, re
 politicization_mod1 <- lm(PROJECT_POLITICIZATION ~ 
                             BACKSLIDING_2 +   PAST_POLITICIZATION + PAST_INFLUENCE,
                           data=data_for_analysis_senior)
-politicization_mod1_controls <- politicization_mod1 %>% update(.~.+religiosity + education+ gender +tenure+ position_type+ ranking+ age+ jurist+ ministry_by_party)
-
-
-sjPlot::tab_model(
-                  politicization_mod1,politicization_mod1_controls,
-                  show.ci = F,
-                  show.se = T,
-                  show.std = T,
-                  collapse.se = T,
-                  emph.p=F,
-                  string.est = "B",
-                  string.std = "Beta",
-                  string.pred = " ",
-                  string.intercept = "Intercept",
-                  pred.labels = predictor_labels)#,
-dv.labels = c("Expected politicization","Expected influence")
-
+politicization_mod1_controls <- politicization_mod1 %>% update(.~.+religiosity + education+ gender +tenure+ position_type+ ranking+ age+ jurist)
 
 influence_mod1 <- politicization_mod1 %>%  update(PROJECT_INFLUENCE~.)
-influence_mod1_controls <- influence_mod1 %>% update(.~.+religiosity + education+ gender +tenure+ position_type+ ranking+ age+ jurist+ ministry_by_party)
+influence_mod1_controls <- influence_mod1 %>% update(.~.+religiosity + education+ gender +tenure+ position_type+ ranking+ age+ jurist)
 
 sjPlot::tab_model(
-                  influence_mod1,influence_mod1_controls,
+                  politicization_mod1_controls,influence_mod1_controls,
+                  show.est = F,
                   show.ci = F,
-                  show.se = T,
+                  show.se = F,
                   show.std = T,
                   collapse.se = T,
                   emph.p=F,
@@ -871,120 +668,46 @@ sjPlot::tab_model(
                   string.std = "Beta",
                   string.pred = " ",
                   string.intercept = "Intercept",
-                  pred.labels = predictor_labels)#,
-dv.labels = c("Expected politicization","Expected influence")
+                  pred.labels = predictor_labels,
+                  dv.labels = c("Expected politicization","Expected influence"),
+                  order.terms = c(2:4,1))
 
 ```
 
 
 Model for exit, voice and work
 ```{r}
-
+#Exit
 exit_mod1 <- lm(INTENT_EXIT_2 ~ 
                   BACKSLIDING_2 +   PAST_POLITICIZATION + PAST_INFLUENCE,
                 data=data_for_analysis_senior %>% drop_na(PROJECT_POLITICIZATION,PROJECT_INFLUENCE))
+exit_mod1_controls <- exit_mod1 %>%  update(.~. +religiosity + education+ gender +tenure+ position_type+ ranking+ age+ jurist)
 
-exit_mod2 <- exit_mod1 %>%  update(.~. + PROJECT_POLITICIZATION + PROJECT_INFLUENCE)
-exit_mod3 <- exit_mod2 %>%  update(.~. +religiosity + education+ gender +tenure+ position_type+ ranking+ age+ jurist+ ministry_by_party)
-
-sjPlot::tab_model(exit_mod1,
-                  exit_mod2,
-                  exit_mod3,
-                  show.ci = F,
-                  show.se = T,
-                  show.std = T,
-                  collapse.se = T,
-                  emph.p=F,
-                  string.est = "B",
-                  string.std = "Beta",
-                  string.pred = " ",
-                  string.intercept = "Intercept",
-                  pred.labels = predictor_labels)
-
-voice_mod1 <- exit_mod1 %>% update(PROJECT_VOICE~.+ PAST_VOICE)
-voice_mod2 <- voice_mod1 %>%  update(.~. + PROJECT_POLITICIZATION + PROJECT_INFLUENCE)
-voice_mod3 <- voice_mod2 %>%  update(.~. +religiosity + education+ gender +tenure+ position_type+ ranking+ age+ jurist+ ministry_by_party)
-
-sjPlot::tab_model(voice_mod1,
-                  voice_mod2,
-                  voice_mod3,
-                  show.ci = F,
-                  show.se = T,
-                  show.std = T,
-                  collapse.se = T,
-                  emph.p=F,
-                  string.est = "B",
-                  string.std = "Beta",
-                  string.pred = " ",
-                  string.intercept = "Intercept",
-                  pred.labels = predictor_labels)
-
-work_mod1 <- exit_mod1 %>% update(PROJECT_EFFORT~.+ PAST_EFFORT)
-work_mod2 <- work_mod1 %>%  update(.~. + PROJECT_POLITICIZATION + PROJECT_INFLUENCE)
-work_mod3 <- work_mod2 %>%  update(.~. +religiosity + education+ gender +tenure+ position_type+ ranking+ age+ jurist+ ministry_by_party)
+exit_mod2_controls <- exit_mod1_controls %>%  update(.~. + PROJECT_POLITICIZATION + PROJECT_INFLUENCE)
 
 
-
-sjPlot::tab_model(work_mod1,
-                  work_mod2,
-                  work_mod3,
-                  show.ci = F,
-                  show.se = T,
-                  show.std = T,
-                  collapse.se = T,
-                  emph.p=F,
-                  string.est = "B",
-                  string.std = "Beta",
-                  string.pred = " ",
-                  string.intercept = "Intercept",
-                  pred.labels = predictor_labels)
-
-```
-
-Models with interactions 
-```{r}
-
-#set Other as a base for ministry_by_party
-data_for_analysis_senior$ministry_by_party <- relevel(data_for_analysis_senior$ministry_by_party, ref = "Other")
-#set very Senior as a based for ranking
-data_for_analysis_senior$ranking <- relevel(data_for_analysis_senior$ranking, ref = "very senior")
-
-#exit
-exit_mod1 <- lm(INTENT_EXIT_2 ~ 
-                  BACKSLIDING_2 +   
-                  PAST_POLITICIZATION + PAST_INFLUENCE+ PROJECT_POLITICIZATION + PROJECT_INFLUENCE +education+ gender +tenure+ position_type+ ranking+ age+ jurist + ministry_by_party,
-                data=data_for_analysis_senior)
-exit_mod1_ministry_by_party_interaction <- exit_mod1 %>% update(.~.+ BACKSLIDING_2:ministry_by_party )
-exit_mod1_jurist_interaction <- exit_mod1 %>% update(.~.+ BACKSLIDING_2:jurist )
-
-
-
-sjPlot::tab_model(exit_mod1,exit_mod1_ministry_by_party_interaction,exit_mod1_jurist_interaction,
-                  show.ci = F,
-                  show.se = T,
-                  show.std = T,
-                  collapse.se = T,
-                  emph.p=F,
-                  string.est = "B",
-                  string.std = "Beta",
-                  string.pred = " ",
-                  string.intercept = "Intercept",
-                  pred.labels = predictor_labels)
-
-
-
-#voice
-
+#Voice
 voice_mod1 <- lm(PROJECT_VOICE ~ 
-                  BACKSLIDING_2 +   
-                  PAST_POLITICIZATION + PAST_INFLUENCE+ PROJECT_POLITICIZATION + PROJECT_INFLUENCE +education+ gender +tenure+ position_type+ ranking+ age+ jurist + ministry_by_party,
-                data=data_for_analysis_senior)
-voice_mod1_ministry_by_party_interaction <- voice_mod1 %>% update(.~.+ BACKSLIDING_2:ministry_by_party )
-voice_mod1_jurist_interaction <- voice_mod1 %>% update(.~.+ BACKSLIDING_2:jurist )
+                  BACKSLIDING_2 +   PAST_POLITICIZATION + PAST_INFLUENCE,
+                data=data_for_analysis_senior %>% drop_na(PROJECT_POLITICIZATION,PROJECT_INFLUENCE))
+voice_mod1_controls <- voice_mod1 %>%  update(.~. +religiosity + education+ gender +tenure+ position_type+ ranking+ age+ jurist)
+
+voice_mod2_controls <- voice_mod1_controls %>%  update(.~. + PROJECT_POLITICIZATION + PROJECT_INFLUENCE)
 
 
 
-sjPlot::tab_model(voice_mod1,voice_mod1_ministry_by_party_interaction,voice_mod1_jurist_interaction,
+#Work
+work_mod1 <- lm(PROJECT_EFFORT ~ 
+                  BACKSLIDING_2 +   PAST_POLITICIZATION + PAST_INFLUENCE,
+                data=data_for_analysis_senior %>% drop_na(PROJECT_POLITICIZATION,PROJECT_INFLUENCE))
+work_mod1_controls <- work_mod1 %>%  update(.~. +religiosity + education+ gender +tenure+ position_type+ ranking+ age+ jurist)
+work_mod2_controls <- work_mod1_controls %>%  update(.~. + PROJECT_POLITICIZATION + PROJECT_INFLUENCE)
+
+
+sjPlot::tab_model(exit_mod1_controls,exit_mod2_controls,
+                  voice_mod1_controls,voice_mod2_controls,
+                  work_mod1_controls,work_mod2_controls,
+                  show.est = F,
                   show.ci = F,
                   show.se = T,
                   show.std = T,
@@ -994,36 +717,14 @@ sjPlot::tab_model(voice_mod1,voice_mod1_ministry_by_party_interaction,voice_mod1
                   string.std = "Beta",
                   string.pred = " ",
                   string.intercept = "Intercept",
-                  pred.labels = predictor_labels)
-
-#EFFORT
-
-effort_mod1 <- lm(PROJECT_EFFORT ~ 
-                   BACKSLIDING_2 +   
-                   PAST_POLITICIZATION + PAST_INFLUENCE+ PROJECT_POLITICIZATION + PROJECT_INFLUENCE +education+ gender +tenure+ position_type+ ranking+ age+ jurist + ministry_by_party,
-                 data=data_for_analysis_senior)
-effort_mod1_ministry_by_party_interaction <- effort_mod1 %>% update(.~.+ BACKSLIDING_2:ministry_by_party )
-effort_mod1_jurist_interaction <- effort_mod1 %>% update(.~.+ BACKSLIDING_2:jurist )
-
-
-
-sjPlot::tab_model(effort_mod1,effort_mod1_ministry_by_party_interaction,effort_mod1_jurist_interaction,
-                  show.ci = F,
-                  show.se = T,
-                  show.std = T,
-                  collapse.se = T,
-                  emph.p=F,
-                  string.est = "B",
-                  string.std = "Beta",
-                  string.pred = " ",
-                  string.intercept = "Intercept",
-                  pred.labels = predictor_labels)
-
+                  pred.labels = predictor_labels,
+                  dv.labels = rep(c("Exit intention","Voice intention", "Work effort intention"),each=2))
 
 ```
 
 
-Models with Junior Civil Servants
+## Models with Junior Civil Servants (online appendix A8)
+
 ```{r}
 
 ## include junior
@@ -1032,6 +733,38 @@ data_for_analysis_all <- new_data %>%
            PROJECT_EFFORT>0|
            PROJECT_VOICE>0) 
 
+
+
+
+```
+
+
+```{r}
+politicization_mod1 <- lm(PROJECT_POLITICIZATION ~ 
+            BACKSLIDING_2 +   PAST_POLITICIZATION + PAST_INFLUENCE,
+            data=data_for_analysis_all)
+
+influence_mod1 <- politicization_mod1 %>%  update(PROJECT_INFLUENCE~.)
+
+sjPlot::tab_model(politicization_mod1,influence_mod1,
+                  show.est = F,
+                  show.ci = F,
+                  show.se = F,
+                  show.std = T,
+                  collapse.se = T,
+                  emph.p=F,
+                  string.est = "B",
+                  string.std = "Beta",
+                  string.pred = " ",
+                  string.intercept = "Intercept",
+                  pred.labels = predictor_labels,
+                  dv.labels = c("Expected politicization","Expected influence"),
+                  order.terms = c(2:4,1))
+
+```
+
+
+```{r}
 exit_mod1 <- lm(INTENT_EXIT_2 ~ 
                   BACKSLIDING_2 +   PAST_POLITICIZATION + PAST_INFLUENCE,
                 data=data_for_analysis_all %>% drop_na(PROJECT_POLITICIZATION,PROJECT_INFLUENCE))
@@ -1061,19 +794,267 @@ sjPlot::tab_model(exit_mod1,exit_mod2,
                   dv.labels = rep(c("Exit intention","Voice intention", "Work effort intention"),each=2),
                   order.terms = c(2,5:6,3:4,7:8,1))
 
+```
 
 
+## Heterogenious effects of backsliding, models with interactions (Online appendix A9)
+
+Interaction with individual level variables
+```{r}
+exit_mod1 <- lm(INTENT_EXIT_2 ~ 
+            BACKSLIDING_2 +   PAST_POLITICIZATION + PAST_INFLUENCE,
+            data=data_for_analysis_senior %>% drop_na(PROJECT_POLITICIZATION,PROJECT_INFLUENCE))
+
+
+voice_mod1 <- exit_mod1 %>% update(PROJECT_VOICE~.+ PAST_VOICE)
+
+
+work_mod1 <- exit_mod1 %>% update(PROJECT_EFFORT~.+ PAST_EFFORT)
+
+```
+
+
+Seniority
+
+```{r}
+exit_mod1_ranking_interaction <- exit_mod1 %>% update(.~.+ BACKSLIDING_2*ranking)
+voice_mod1_ranking_interaction <- voice_mod1 %>% update(.~.+ BACKSLIDING_2*ranking)
+work_mod1_ranking_interaction <- work_mod1 %>% update(.~.+ BACKSLIDING_2*ranking)
+
+sjPlot::tab_model(exit_mod1_ranking_interaction,
+                  voice_mod1_ranking_interaction,
+                  work_mod1_ranking_interaction,
+                  show.est = F,
+                  show.ci = F,
+                  show.se = F,
+                  show.std = T,
+                  collapse.se = T,
+                  emph.p=F,
+                  string.est = "B",
+                  string.std = "Beta",
+                  string.pred = " ",
+                  string.intercept = "Intercept",
+                  pred.labels = predictor_labels,
+                                    dv.labels = rep(c("Exit intention","Voice intention", "Work effort intention"),each=1))
+```
+
+
+```{r}
+anova(exit_mod1_ranking_interaction)
+anova(voice_mod1_ranking_interaction)
+anova(work_mod1_ranking_interaction)
+```
+
+
+```{r}
+sjPlot::plot_model(work_mod1_ranking_interaction,type="int")
+```
+
+
+Tenure
+
+```{r}
+exit_mod1_tenure_interaction <- exit_mod1 %>% update(.~.+ BACKSLIDING_2*tenure)
+voice_mod1_tenure_interaction <- voice_mod1 %>% update(.~.+ BACKSLIDING_2*tenure)
+work_mod1_tenure_interaction <- work_mod1 %>% update(.~.+ BACKSLIDING_2*tenure)
+
+sjPlot::tab_model(exit_mod1_tenure_interaction,
+                  voice_mod1_tenure_interaction,
+                  work_mod1_tenure_interaction,
+                  show.est = F,
+                  show.ci = F,
+                  show.se = F,
+                  show.std = T,
+                  collapse.se = T,
+                  emph.p=F,
+                  string.est = "B",
+                  string.std = "Beta",
+                  string.pred = " ",
+                  string.intercept = "Intercept",
+                  pred.labels = predictor_labels,
+                                    dv.labels = rep(c("Exit intention","Voice intention", "Work effort intention"),each=1))
+```
+
+
+```{r}
+anova(exit_mod1_tenure_interaction)
+anova(voice_mod1_tenure_interaction)
+anova(work_mod1_tenure_interaction)
+```
+
+
+Education 
+
+```{r}
+t1 <- data_for_analysis_senior %>% drop_na(PROJECT_POLITICIZATION,PROJECT_INFLUENCE) %>% 
+  filter(education!="high-school")
+
+exit_mod1_education_interaction <- exit_mod1 %>% update(.~.+ BACKSLIDING_2*education,data=t1)
+voice_mod1_education_interaction <- voice_mod1 %>% update(.~.+ BACKSLIDING_2*education,data=t1)
+work_mod1_education_interaction <- work_mod1 %>% update(.~.+ BACKSLIDING_2*education,data=t1)
+
+sjPlot::tab_model(exit_mod1_education_interaction,
+                  voice_mod1_education_interaction,
+                  work_mod1_education_interaction,
+                  show.est = F,
+                  show.ci = F,
+                  show.se = F,
+                  show.std = T,
+                  collapse.se = T,
+                  emph.p=F,
+                  string.est = "B",
+                  string.std = "Beta",
+                  string.pred = " ",
+                  string.intercept = "Intercept",
+                  pred.labels = predictor_labels,
+                                    dv.labels = rep(c("Exit intention","Voice intention", "Work effort intention"),each=1))
+```
+
+
+```{r}
+anova(exit_mod1_education_interaction)
+anova(voice_mod1_education_interaction)
+anova(work_mod1_education_interaction)
+```
+
+
+
+Legal education background (jurist) 
+
+```{r}
+exit_mod1_jurist_interaction <- exit_mod1 %>% update(.~.+ BACKSLIDING_2*jurist)
+voice_mod1_jurist_interaction <- voice_mod1 %>% update(.~.+ BACKSLIDING_2*jurist)
+work_mod1_jurist_interaction <- work_mod1 %>% update(.~.+ BACKSLIDING_2*jurist)
+
+sjPlot::tab_model(exit_mod1_jurist_interaction,
+                  voice_mod1_jurist_interaction,
+                  work_mod1_jurist_interaction,
+                  show.est = F,
+                  show.ci = F,
+                  show.se = F,
+                  show.std = T,
+                  collapse.se = T,
+                  emph.p=F,
+                  string.est = "B",
+                  string.std = "Beta",
+                  string.pred = " ",
+                  string.intercept = "Intercept",
+                  pred.labels = predictor_labels,
+                                    dv.labels = rep(c("Exit intention","Voice intention", "Work effort intention"),each=1))
+```
+
+
+```{r}
+anova(exit_mod1_jurist_interaction)
+anova(voice_mod1_jurist_interaction)
+anova(work_mod1_jurist_interaction)
+```
+
+
+
+Age
+
+```{r}
+exit_mod1_age_interaction <- exit_mod1 %>% update(.~.+ BACKSLIDING_2*age)
+voice_mod1_age_interaction <- voice_mod1 %>% update(.~.+ BACKSLIDING_2*age)
+work_mod1_age_interaction <- work_mod1 %>% update(.~.+ BACKSLIDING_2*age)
+
+sjPlot::tab_model(exit_mod1_age_interaction,
+                  voice_mod1_age_interaction,
+                  work_mod1_age_interaction,
+                  show.est = F,
+                  show.ci = F,
+                  show.se = F,
+                  show.std = T,
+                  collapse.se = T,
+                  emph.p=F,
+                  string.est = "B",
+                  string.std = "Beta",
+                  string.pred = " ",
+                  string.intercept = "Intercept",
+                  pred.labels = predictor_labels,
+                                    dv.labels = rep(c("Exit intention","Voice intention", "Work effort intention"),each=1))
+```
+
+
+```{r}
+anova(exit_mod1_age_interaction)
+anova(voice_mod1_age_interaction)
+anova(work_mod1_age_interaction)
+```
+
+Gender
+
+```{r}
+exit_mod1_gender_interaction <- exit_mod1 %>% update(.~.+ BACKSLIDING_2*gender)
+voice_mod1_gender_interaction <- voice_mod1 %>% update(.~.+ BACKSLIDING_2*gender)
+work_mod1_gender_interaction <- work_mod1 %>% update(.~.+ BACKSLIDING_2*gender)
+
+sjPlot::tab_model(exit_mod1_gender_interaction,
+                  voice_mod1_gender_interaction,
+                  work_mod1_gender_interaction,
+                  show.est = F,
+                  show.ci = F,
+                  show.se = F,
+                  show.std = T,
+                  collapse.se = T,
+                  emph.p=F,
+                  string.est = "B",
+                  string.std = "Beta",
+                  string.pred = " ",
+                  string.intercept = "Intercept",
+                  pred.labels = predictor_labels,
+                                    dv.labels = rep(c("Exit intention","Voice intention", "Work effort intention"),each=1))
+```
+
+
+```{r}
+anova(exit_mod1_gender_interaction)
+anova(voice_mod1_gender_interaction)
+anova(work_mod1_gender_interaction)
+```
+
+
+
+Party by minister
+
+```{r}
+exit_mod1_ministry_by_party <- exit_mod1 %>% update(.~.+ ministry_by_party)
+exit_mod1_ministry_by_party_interaction <- exit_mod1 %>% update(.~.+ BACKSLIDING_2*ministry_by_party)
+
+voice_mod1_ministry_by_party <- voice_mod1 %>% update(.~.+ ministry_by_party)
+voice_mod1_ministry_by_party_interaction <- voice_mod1 %>% update(.~.+ BACKSLIDING_2*ministry_by_party)
+
+work_mod1_ministry_by_party <- work_mod1 %>% update(.~.+ ministry_by_party)
+work_mod1_ministry_by_party_interaction <- work_mod1 %>% update(.~.+ BACKSLIDING_2*ministry_by_party)
+
+sjPlot::tab_model(exit_mod1_ministry_by_party_interaction,
+                  voice_mod1_ministry_by_party_interaction,
+                  work_mod1_ministry_by_party_interaction,
+                  show.est = F,
+                  show.ci = F,
+                  show.se = F,
+                  show.std = T,
+                  collapse.se = T,
+                  emph.p=F,
+                  string.est = "B",
+                  string.std = "Beta",
+                  string.pred = " ",
+                  string.intercept = "Intercept",
+                  pred.labels = predictor_labels,
+                                    dv.labels = rep(c("Exit intention","Voice intention", "Work effort intention"),each=1))
+```
+
+
+```{r}
+anova(exit_mod1_ministry_by_party_interaction)
+anova(voice_mod1_ministry_by_party_interaction)
+anova(work_mod1_ministry_by_party_interaction)
 ```
 
 
 
 
 
-```{r, fig.width=8,fig.height=6}
-p1<- cars %>% ggplot(aes(x=speed))+ geom_histogram()
 
-p1
-
-#ggsave("p1.jpg",width = 8, height = 4,dpi=600)
-```
 
