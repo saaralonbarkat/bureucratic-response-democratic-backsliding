@@ -1,203 +1,178 @@
-#import data
-source("C:\\Users\\nirko\\Dropbox\\Civil Servants' Perceptions of Democratic Decline\\Code\\Operationalization & CFA\\Operationalization.R")
+# Load necessary libraries
+library(dplyr)
+library(survey)
+library(srvyr)
 
-data_for_analysis_senior <- data_for_analysis %>% 
-  filter((ranking !="junior") %>% replace_na(TRUE)) %>% 
-  filter(INTENT_EXIT_2>0|
-           PROJECT_EFFORT>0|
-           PROJECT_VOICE>0)
+# 1: Prepare Data
+# Filter data for analysis
+data_for_analysis_senior <- data_for_analysis %>%
+  filter((ranking != "junior") %>% replace_na(TRUE)) %>%
+  filter(INTENT_EXIT_2 > 0 | PROJECT_EFFORT > 0 | PROJECT_VOICE > 0)
 
-## Filter sample data
-filtered_sample_data <- data_for_analysis_senior[data_for_analysis_senior$ranking %in% c("middle", "senior", "very senior"), ]
+# Create standardized columns for ranking and education
+data_for_analysis_senior <- data_for_analysis_senior %>%
+  mutate(
+    ranking_standardized = ifelse(ranking == "middle", "middle", "senior_or_very_senior"),
+    education_standardized = ifelse(
+      education %in% c("high-school", "other"), "high-school", as.character(education)
+    ),
+    education_standardized = factor(
+      education_standardized,
+      levels = c("high-school", "bachelor", "master", "phd")
+    )
+  )
 
+# 2: Filter sample data
+filtered_sample_data <- data_for_analysis_senior %>%
+  filter(ranking %in% c("middle", "senior", "very senior"))
 
-##1. Calculate Population Proportions
+# 3: Calculate Population and Sample Proportions
+# Read population statistics
 pop_statistics <- readRDS("C:\\Users\\nirko\\Dropbox\\Civil Servants' Perceptions of Democratic Decline\\Code\\Operationalization & CFA\\pop_statistics.rds")
 pop_gender <- pop_statistics$gender_proportions
 pop_age <- pop_statistics$age_proportions
 pop_ranking <- pop_statistics$ranking_proportions
 pop_tenure <- pop_statistics$tenure_proportions
 pop_education <- pop_statistics$education_proportions
-pop_education <- pop_education[c("high school", "bachelor", "master", "phd")] # Reorder and rename
+
+pop_education <- pop_education[c("high school", "bachelor", "master", "phd")]
 names(pop_education) <- c("high-school", "bachelor", "master", "phd")
 
-
-
-# 2. Calculate sample proportions
+# Sample proportions
 sample_gender <- prop.table(table(filtered_sample_data$gender))
 sample_age <- prop.table(table(filtered_sample_data$age))
 sample_tenure <- prop.table(table(filtered_sample_data$tenure))
-#ranking - process categores first
-filtered_sample_data$ranking_standardized <- ifelse(
-  filtered_sample_data$ranking == "middle", "middle", "senior_or_very_senior"
-)
+
 sample_ranking <- prop.table(table(filtered_sample_data$ranking_standardized))
-#education - process the categories before
-filtered_sample_data$education_standardized <- ifelse(
-  filtered_sample_data$education %in% c("high-school", "other"), "high-school",
-  as.character(filtered_sample_data$education) # Retain other categories as they are
-)
-
-filtered_sample_data$education_standardized <- factor(
-  filtered_sample_data$education_standardized,
-  levels = c("high-school", "bachelor", "master", "phd") # Ensure all levels are included
-)
-
 sample_education <- prop.table(table(filtered_sample_data$education_standardized))
 
-# 3. Create weights
-# Gender Weight
+# Calculate weights for each variable
 weight_gender <- pop_gender / sample_gender
-weight_gender
-# Age Weight
 weight_age <- pop_age / sample_age
-weight_age
-# Ranking Weight
 weight_ranking <- pop_ranking / sample_ranking
-weight_ranking
-# Tenure Weight
 weight_tenure <- pop_tenure / sample_tenure
-weight_tenure
-# Education Weight
 weight_education <- pop_education / sample_education
-weight_education
 
-# 4. Weights to Observations
-# 1. Creatre sample combinations of gender, age, ranking, tenure, and education 
-sample_combinations <- filtered_sample_data %>%
+# 4: Create Weights for Combinations
+# Combine weights into a single dataset
+weights_df <- filtered_sample_data %>%
   group_by(gender, age, ranking_standardized, tenure, education_standardized) %>%
-  summarise(
-    n_sample = n(),
-    .groups = 'drop'
-  ) %>%
-  mutate(percent_sample = n_sample / sum(n_sample))
-
-
-# 2. Check population combinations
-pop_combinations <- expand.grid(
-  gender = names(pop_gender),
-  age = names(pop_age),
-  ranking = names(pop_ranking),
-  tenure = names(pop_tenure),
-  education = names(pop_education)
-) %>%
-  mutate(
-    percent_pop = pop_gender[gender] * 
-      pop_age[age] * 
-      pop_ranking[ranking] * 
-      pop_tenure[tenure] * 
-      pop_education[education]
-  )
-
-# 3. Calculate weights with checking
-weights_df <- sample_combinations %>%
+  summarise(n_sample = n(), .groups = 'drop') %>%
+  mutate(percent_sample = n_sample / sum(n_sample)) %>%
   left_join(
-    pop_combinations,
-    by = c("gender", 
-           "age",
-           "ranking_standardized" = "ranking",
-           "tenure",
-           "education_standardized" = "education")
+    expand.grid(
+      gender = names(pop_gender),
+      age = names(pop_age),
+      ranking = names(pop_ranking),
+      tenure = names(pop_tenure),
+      education = names(pop_education)
+    ) %>%
+      mutate(
+        percent_pop = pop_gender[gender] *
+          pop_age[age] *
+          pop_ranking[ranking] *
+          pop_tenure[tenure] *
+          pop_education[education]
+      ),
+    by = c("gender", "age", "ranking_standardized" = "ranking", "tenure", "education_standardized" = "education")
   ) %>%
-  mutate(
-    weight = percent_pop / percent_sample
-  )
+  mutate(weight = percent_pop / percent_sample)
 
-
-# 4. Add weights to original dataset with checking
-# Add weights to `data_for_analysis_senior`
+# 5: Add Weights to Original Dataset
 data_for_analysis_senior <- data_for_analysis_senior %>%
-  mutate(
-    ranking_standardized = ifelse(ranking == "middle", "middle", "senior_or_very_senior"),
-    education_standardized = ifelse(
-      education %in% c("high-school", "other"), "high-school", as.character(education)
-    )
-  ) %>%
-  mutate(
-    education_standardized = factor(
-      education_standardized,
-      levels = c("high-school", "bachelor", "master", "phd")
-    )
-  ) %>%
   left_join(
     weights_df %>% select(gender, age, ranking_standardized, tenure, education_standardized, weight),
     by = c("gender", "age", "ranking_standardized", "tenure", "education_standardized")
   )
 
-#convert variables to appropriate type
-data_for_analysis_senior <- data_for_analysis_senior %>%
-  mutate(
-    PROJECT_POLITICIZATION = as.numeric(PROJECT_POLITICIZATION),
-    BACKSLIDING_2 = as.numeric(BACKSLIDING_2),
-    PAST_POLITICIZATION = as.numeric(PAST_POLITICIZATION),
-    PAST_INFLUENCE = as.numeric(PAST_INFLUENCE)
-  )
+# 6: Handle Missing Weights
+data_for_analysis_senior <- data_for_analysis_senior %>% filter(!is.na(weight))
 
-# Verify required variables exist
-names(data_for_analysis_senior)
+# 7: Create Survey Design Object
+survey_design <- data_for_analysis_senior %>%
+  as_survey_design(weights = weight)
 
+# 8: Run Weighted Models
+# Example: OLS for Politicization and Influence
+politicization_mod1 <- svyglm(
+  PROJECT_POLITICIZATION ~ BACKSLIDING_2 + PAST_POLITICIZATION + PAST_INFLUENCE,
+  design = survey_design
+)
 
-#5. Now run the models with weights
-# First set of models for politicization and influence
-politicization_mod1 <- lm(PROJECT_POLITICIZATION ~ 
-                            BACKSLIDING_2 + PAST_POLITICIZATION + PAST_INFLUENCE,
-                          data = data_for_analysis_senior,
-                          weights = weight)
+influence_mod1 <- svyglm(
+  PROJECT_INFLUENCE ~ BACKSLIDING_2 + PAST_POLITICIZATION + PAST_INFLUENCE,
+  design = survey_design
+)
 
-influence_mod1 <- politicization_mod1 %>%  
-  update(PROJECT_INFLUENCE~.)
+# 9: Output Results
+sjPlot::tab_model(
+  politicization_mod1, influence_mod1,
+  show.est = F,
+  show.ci = F,
+  show.se = T,
+  show.std = T,
+  collapse.se = T,
+  emph.p = F,
+  string.est = "B",
+  string.std = "Beta",
+  string.pred = " ",
+  string.intercept = "Intercept",
+  pred.labels = predictor_labels,
+  dv.labels = c("Expected politicization", "Expected influence"),
+  order.terms = c(2:4, 1)
+)
 
+# 10: Models for exit, voice, and work intentions using survey weights
+# Exit intention model
+exit_mod1 <- svyglm(
+  INTENT_EXIT_2 ~ BACKSLIDING_2 + PAST_POLITICIZATION + PAST_INFLUENCE,
+  design = survey_design
+)
 
-sjPlot::tab_model(politicization_mod1, influence_mod1,
-                  show.est = F,
-                  show.ci = F,
-                  show.se = F,
-                  show.std = T,
-                  collapse.se = T,
-                  emph.p = F,
-                  string.est = "B",
-                  string.std = "Beta",
-                  string.pred = " ",
-                  string.intercept = "Intercept",
-                  pred.labels = predictor_labels,
-                  dv.labels = c("Expected politicization", "Expected influence"),
-                  order.terms = c(2:4,1))
+exit_mod2 <- svyglm(
+  INTENT_EXIT_2 ~ BACKSLIDING_2 + PAST_POLITICIZATION + PAST_INFLUENCE + PROJECT_POLITICIZATION + PROJECT_INFLUENCE,
+  design = survey_design
+)
 
-# Second set of models for exit, voice, and work intentions
-exit_mod1 <- lm(INTENT_EXIT_2 ~ 
-                  BACKSLIDING_2 + PAST_POLITICIZATION + PAST_INFLUENCE,
-                data = data_for_analysis_senior %>% 
-                  drop_na(PROJECT_POLITICIZATION, PROJECT_INFLUENCE),
-                weights = weight)
+# Voice intention model
+voice_mod1 <- svyglm(
+  PROJECT_VOICE ~ BACKSLIDING_2 + PAST_POLITICIZATION + PAST_INFLUENCE + PAST_VOICE,
+  design = survey_design
+)
 
-exit_mod2 <- exit_mod1 %>%  
-  update(.~. + PROJECT_POLITICIZATION + PROJECT_INFLUENCE)
+voice_mod2 <- svyglm(
+  PROJECT_VOICE ~ BACKSLIDING_2 + PAST_POLITICIZATION + PAST_INFLUENCE + PAST_VOICE + PROJECT_POLITICIZATION + PROJECT_INFLUENCE,
+  design = survey_design
+)
 
-voice_mod1 <- exit_mod1 %>% 
-  update(PROJECT_VOICE~. + PAST_VOICE)
+# Work effort intention model
+work_mod1 <- svyglm(
+  PROJECT_EFFORT ~ BACKSLIDING_2 + PAST_POLITICIZATION + PAST_INFLUENCE + PAST_EFFORT,
+  design = survey_design
+)
 
-voice_mod2 <- voice_mod1 %>%  
-  update(.~. + PROJECT_POLITICIZATION + PROJECT_INFLUENCE)
+work_mod2 <- svyglm(
+  PROJECT_EFFORT ~ BACKSLIDING_2 + PAST_POLITICIZATION + PAST_INFLUENCE + PAST_EFFORT + PROJECT_POLITICIZATION + PROJECT_INFLUENCE,
+  design = survey_design
+)
 
-work_mod1 <- exit_mod1 %>% 
-  update(PROJECT_EFFORT~. + PAST_EFFORT)
+# Tabulate the results
+sjPlot::tab_model(
+  exit_mod1, exit_mod2,
+  voice_mod1, voice_mod2,
+  work_mod1, work_mod2,
+  show.est = F,
+  show.ci = F,
+  show.se = T,
+  show.std = T,
+  collapse.se = T,
+  emph.p = F,
+  string.est = "B",
+  string.std = "Beta",
+  string.pred = " ",
+  string.intercept = "Intercept",
+  pred.labels = predictor_labels,
+  dv.labels = rep(c("Exit intention", "Voice intention", "Work effort intention"), each = 2),
+  order.terms = c(2, 5:6, 3:4, 7:8, 1)
+)
 
-work_mod2 <- work_mod1 %>%  
-  update(.~. + PROJECT_POLITICIZATION + PROJECT_INFLUENCE)
-
-sjPlot::tab_model(exit_mod1, exit_mod2,
-                  voice_mod1, voice_mod2,
-                  work_mod1, work_mod2,
-                  show.est = F,
-                  show.ci = F,
-                  show.se = T,
-                  show.std = T,
-                  collapse.se = T,
-                  emph.p = F,
-                  string.est = "B",
-                  string.std = "Beta",
-                  string.pred = " ",
-                  string.intercept = "Intercept",
-                  pred.labels = predictor_labels,
-                  dv.labels = rep(c("Exit intention", "Voice intention", "Work effort intention"), each=2),
-                  order.terms = c(2,5:6,3:4,7:8,1))
